@@ -223,7 +223,7 @@ function CardDetails({item, num}) {
   return (
     <li className="list-group-item" key={num} id={item.code} style={{backgroundColor: item.rarity == "Common" ? 'white' : item.rarity == "Uncommon" ? 'lightgray' : 'gold' }}>
     {item.imageUrl ? <img src={item.imageUrl} style={{float:'left', height: '148px', margin: '0px 10px',}}/> : null}
-    <strong>{item.name}</strong> <br/>{item.types.includes("Creature") ? item.power + '/' + item.toughness + ' ': null}{JSON.stringify(item.types).replace(/[\["|"\]]/g,'')}{itemAbility} <Mana manaCost={item.manaCost} key={num}></Mana><br/> 
+    <strong>{item.name}</strong> - {item.types.includes("Creature") ? item.power + '/' + item.toughness + ' ': null}{JSON.stringify(item.types).replace(/[\["|"\]]/g,'')}{itemAbility} <Mana manaCost={item.manaCost} key={num}></Mana><br/> 
     <span style={{fontSize:'0.85rem'}}>{item.text.replace('[','\n[')}</span><br/><em style={{fontSize:'0.6rem'}}>{item.flavor}</em>
     
   </li>
