@@ -124,6 +124,7 @@ function App() {
   //const cardSearch = (url,initial) => useDataApi(url, initial);
 
   const handleModeChange = (e) => {
+    setCurrentSetPage(currentPage);
     doFetch('https://api.magicthegathering.io/v1/cards?set='+e.target.id);
     setMode('cards');
     let name = sets.filter(set => set.code == e.target.id)[0].name;
@@ -134,19 +135,17 @@ function App() {
     doFetch('https://api.magicthegathering.io/v1/sets');
     setMode('sets');
     setMtgsetName('');
+    setCurrentPage(currentSetPage);
   }
 
-  const handlePageChange = (e,mode) => {
-    setCurrentPage(Number(e.target.textContent.replace('Pg ','')));
-    if (mode = 'sets') {
-      setCurrentSetPage(Number(e.target.textContent.replace('Pg ','')));
-    }
+  const handlePageChange = (e) => {
+      setCurrentPage(Number(e.target.textContent.replace('Pg ','')));
   };
 
   let filteredSets = sets.filter(set=> Number(set.releaseDate.substr(0,4)) >= 2018 && (set.type == 'core' || set.type == 'expansion'));
   let page = mode == 'sets' ? filteredSets : data.cards;
   if (page.length >= 1 && mode == 'sets') {
-    page = paginate(page, currentSetPage, pageSize);
+    page = paginate(page, currentPage, pageSize);
   }
   else if (page.length >= 1 && mode == 'cards') {
     page = paginate(page, currentPage, pageSize);
@@ -174,7 +173,7 @@ function App() {
       <Pagination
         items={mode == 'sets' ? filteredSets : data.cards}
         pageSize={pageSize}
-        onPageChange={(e)=>{handlePageChange(e,mode)}}
+        onPageChange={handlePageChange}
         handlePageBack={handlePageBack}
         mode={mode}
       ></Pagination>
