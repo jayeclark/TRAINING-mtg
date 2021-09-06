@@ -2,8 +2,6 @@ const Pagination = ({ items, pageSize, onPageChange, handlePageBack, mode }) => 
   if (items.length <= 1) {return null;}
   let pageNum = Math.ceil(items.length / pageSize);
   let pages = [...Array(pageNum+1).keys()].slice(1);
-  console.log(pages);
-  console.log(items);
   const {Button} = ReactBootstrap;
   let list = pages.map((x,i)=>{
     
@@ -51,7 +49,6 @@ const useDataApi = (initialUrl, initialData) => {
       dispatch({type: 'FETCH_INIT'})
       try {
         if (url.includes('cards')) {
-          console.log('cards');
           let length = 100;
           let count = 1;
           while (length > 0) {
@@ -59,7 +56,6 @@ const useDataApi = (initialUrl, initialData) => {
             dispatch({type: 'FETCH_SUCCESS', payload: result.data});
             count++;
             length = result.data.cards.length;
-            console.log(length);
           }
         }
         else {
