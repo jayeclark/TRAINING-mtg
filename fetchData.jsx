@@ -2,6 +2,8 @@ const Pagination = ({ items, pageSize, onPageChange, handlePageBack, mode }) => 
   if (items.length <= 1) {return null;}
   let pageNum = Math.ceil(items.length / pageSize);
   let pages = [...Array(pageNum+1).keys()].slice(1);
+  console.log(pages);
+  console.log(items);
   const {Button} = ReactBootstrap;
   let list = pages.map((x,i)=>{
     
@@ -49,13 +51,15 @@ const useDataApi = (initialUrl, initialData) => {
       dispatch({type: 'FETCH_INIT'})
       try {
         if (url.includes('cards')) {
+          console.log('cards');
           let length = 100;
           let count = 1;
           while (length > 0) {
             const result = await axios(url+'&page='+count);
             dispatch({type: 'FETCH_SUCCESS', payload: result.data});
             count++;
-            length = result.data.length;
+            length = result.data.cards.length;
+            console.log(length);
           }
         }
         else {
@@ -209,30 +213,30 @@ function CardDetails({item, num}) {
                     Trample: ' with Trample',
                     Vigilance: ' with Vigilance',}
   let itemAbility = '';
-  item.text = item.text.replace(" (This creature can't be blocked except by creatures with flying or reach.)",".");
-  item.text = item.text.replace(" (This creature deals combat damage before creatures without first strike.)",".");
+  item.text = item.text ? item.text.replace(" (This creature can't be blocked except by creatures with flying or reach.)",".") : null;
+  item.text = item.text ? item.text.replace(" (This creature deals combat damage before creatures without first strike.)",".") : null;
   for (let a in abilities) {
     let ability = abilities[a];
     if (item.text.includes(a)) {
       if (itemAbility == '') {itemAbility = ability} else {itemAbility += ability.replace('with','and')}
-      item.text = item.text.replace(a+' ',a+'\. ');
+      item.text = item.text ? item.text.replace(a+' ',a+'\. ') : null;
       }
   };
   
   return (
     <li className="list-group-item" key={num} id={item.code} style={{backgroundColor: item.rarity == "Common" ? 'white' : item.rarity == "Uncommon" ? 'lightgray' : 'gold' }}>
     {item.imageUrl ? <img src={item.imageUrl} style={{float:'left', height: '148px', margin: '0px 10px',}}/> : null}
-    <strong>{item.name}</strong> - {item.types.includes("Creature") ? item.power + '/' + item.toughness + ' ': null}{JSON.stringify(item.types).replace(/[\["|"\]]/g,'')}{itemAbility} <Mana manaCost={item.manaCost} key={num}></Mana><br/> 
-    <span style={{fontSize:'0.85rem'}}>{item.text.replace('[','\n[')}</span><br/><em style={{fontSize:'0.6rem'}}>{item.flavor}</em>
+    <strong>{item.name}</strong> - {item.types.includes("Creature") ? item.power + '/' + item.toughness + ' ': null}{item.types ? JSON.stringify(item.types).replace(/[\["|"\]]/g,'') : null}{itemAbility} <Mana manaCost={item.manaCost} key={num}></Mana><br/> 
+    <span style={{fontSize:'0.85rem'}}>{item.text}</span><br/><em style={{fontSize:'0.6rem'}}>{item.flavor}</em>
     
   </li>
   )
 }
 
 function Mana({manaCost}) {
-  let manaArray = manaCost.replace(/^\{/,'').replace(/\}$/,'').split('}{');
+  let manaArray = manaCost ? manaCost.replace(/^\{/,'').replace(/\}$/,'').split('}{') : null;
   return (
-    <div style={{display:'flex',width:'calc('+manaArray.length+' * 17)'}}>{manaArray.map((m,i)=>(<div key={i} className={/[WRGBU]/.test(m) ? 'mana mana-'+m : 'mana'}>{/[WRGBU]/.test(m) ? null : m}</div>))}</div>
+    <div style={{display:'flex',width:'calc('+(manaArray ? manaArray.length : 0)+' * 17)'}}>{manaArray ? manaArray.map((m,i)=>(<div key={i} className={/[WRGBU]/.test(m) ? 'mana mana-'+m : 'mana'}>{/[WRGBU]/.test(m) ? null : m}</div>)) : null}</div>
   )
 }
 
