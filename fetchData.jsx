@@ -1,20 +1,22 @@
-const Pagination = ({ items, pageSize, onPageChange }) => {
-  if (items <= 1) {return null;}
-  let pageNum = Math.floor(items.length / pageSize);
+const Pagination = ({ items, pageSize, onPageChange, handlePageBack, mode }) => {
+  if (items.length <= 1) {return null;}
+  let pageNum = Math.ceil(items.length / pageSize);
   let pages = [...Array(pageNum+1).keys()].slice(1);
   const {Button} = ReactBootstrap;
   let list = pages.map((x,i)=>{
     
-    Button.className = 'page-item';
-    Button.key = i;
-    Button.onClick = onPageChange;
-    console.log(Button);
     return (
-      <Button className='page-item' key={i} onClick={onPageChange}>Pg {i+1}</Button>
+      <Button className='page-button' key={i} onClick={onPageChange}>{i+1}</Button>
     )
   })
   return (
-    <nav><ul>{list}</ul></nav>
+    <nav style={{marginLeft:'-20px'}}>
+      <ul>
+       <Button className='page-button-disabled' disabled={true}>Page</Button>
+      {list}
+      {mode == 'cards' ? <Button className='page-button' key={pages.length+2} onClick={handlePageBack}>Return to Set List</Button> : null}
+      </ul>
+    </nav>
   );
 };
 
@@ -38,6 +40,7 @@ const useDataApi = (initialUrl, initialData) => {
     isLoading: false,
     isError: false,
     data: initialData,
+    sets: [],
   });
 
   useEffect(() => {
@@ -45,8 +48,21 @@ const useDataApi = (initialUrl, initialData) => {
     const fetchData = async () => {
       dispatch({type: 'FETCH_INIT'})
       try {
-        const result = await axios(url);
-        dispatch({type: 'FETCH_SUCCESS', payload: result.data});
+        if (url.includes('cards')) {
+          let length = 100;
+          let count = 1;
+          while (length > 0) {
+            const result = await axios(url+'&page='+count);
+            dispatch({type: 'FETCH_SUCCESS', payload: result.data});
+            count++;
+            length = result.data.length;
+          }
+        }
+        else {
+          const result = await axios(url);
+          dispatch({type: 'FETCH_SUCCESS', payload: result.data});
+        }
+        
       } catch (error) {
         dispatch({type: 'FETCH_FAILURE'})
       }
@@ -61,6 +77,7 @@ const useDataApi = (initialUrl, initialData) => {
 };
 
 const dataFetchReducer = (state, action) => {
+  let existingcards = state.data.cards;
   switch (action.type) {
     case 'FETCH_INIT':
       return {
@@ -73,7 +90,8 @@ const dataFetchReducer = (state, action) => {
         ...state,
         isLoading: false,
         isError: false,
-        data: action.payload,
+        data: action.payload.hasOwnProperty('cards') ? {cards: [...existingcards,...action.payload.cards]} : {cards:[]},
+        sets: action.payload.hasOwnProperty('sets') ? action.payload.sets : [],
       };
     case 'FETCH_FAILURE':
       return {
@@ -89,44 +107,131 @@ const dataFetchReducer = (state, action) => {
 // App that gets data from Hacker News url
 function App() {
   const { Fragment, useState, useEffect, useReducer } = React;
-  const [query, setQuery] = useState('MIT');
+  const [mode, setMode] = useState('sets');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-  const [{ data, isLoading, isError }, doFetch] = useDataApi(
-    'https://hn.algolia.com/api/v1/search?query=MIT',
+  const pageSize = 5;
+  const [mtgsetName, setMtgsetName] = useState('');
+  //const [cards, setCards] = useState([]);
+
+  const [{ data, sets, isLoading, isError }, doFetch] = useDataApi(
+    'https://api.magicthegathering.io/v1/sets',
     {
-      hits: [],
+      cards: [],
     }
   );
+
+  //const cardSearch = (url,initial) => useDataApi(url, initial);
+
+  const handleModeChange = (e) => {
+    doFetch('https://api.magicthegathering.io/v1/cards?set='+e.target.id);
+    setMode('cards');
+    setMtgsetName(e.target.innerHTML);
+  }
+
+  const handlePageBack = (e) => {
+    console.log(e.target.id);
+    doFetch('https://api.magicthegathering.io/v1/sets');
+    setMode('sets');
+    setMtgsetName('');
+  }
+
   const handlePageChange = (e) => {
-    setCurrentPage(Number(e.target.textContent));
+    setCurrentPage(Number(e.target.textContent.replace('Pg ','')));
   };
-  let page = data.hits;
+  let filteredSets = sets.filter(set=> Number(set.releaseDate.substr(0,4)) >= 2018 && (set.type == 'core' || set.type == 'expansion'));
+  let page = mode == 'sets' ? filteredSets : data.cards;
   if (page.length >= 1) {
     page = paginate(page, currentPage, pageSize);
     console.log(`currentPage: ${currentPage}`);
   }
+
+
+
   return (
     <Fragment>
+      <div style={{padding:'20px'}}>
+      <h1>Magic: the Gathering {mode == 'sets' ? 'Sets' : 'Cards'}</h1>
+      {mode == 'sets' ? <h6>Click on an item to browse cards in that set.</h6> : <h6>{mtgsetName}</h6> }
+      </div>
       {isLoading ? (
-        <div>Loading ...</div>
+        <div style={{padding:'20px'}}>Loading ...</div>
       ) : (
         // Part 1, step 2 code goes here
         <ul className="list-group">
-          {page.map((item) => (
-            <li className="list-group-item" key={item.objectID}>
-              <a href={item.url}>{item.title}</a>
-            </li>
+          {page.map((item,i) => (
+            mode == 'sets' ? <SetDetails item={item} key={i} num={i} handleModeChange={handleModeChange}></SetDetails> : 
+            <CardDetails item={item} key={i} num={i}></CardDetails>
           ))}
         </ul>
       )}
       <Pagination
-        items={data.hits}
+        items={mode == 'sets' ? filteredSets : data.cards}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+        handlePageBack={handlePageBack}
+        mode={mode}
       ></Pagination>
     </Fragment>
   );
+}
+
+function SetDetails({item, num, handleModeChange}) {
+  let months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return (
+    <li className="list-group-item" key={num} id={item.code} onClick={handleModeChange}>
+    <strong>{item.name}</strong><br/> 
+    <span style={{fontSize:'0.8rem'}}>({item.type.substr(0,1).toUpperCase()}{item.type.slice(1)}, {months[Number(item.releaseDate.substr(5,2))]} {item.releaseDate.substr(8,2)} {item.releaseDate.substr(0,4)})</span>
+  </li>
+  )
+}
+
+function CardDetails({item, num}) {
+  let abilities = { Deathtouch: ' with Deathtouch',
+                    Defender: ', Defender',
+                    'Double strike': ' with Double Strike',
+                    Enchant: ' with Enchant',
+                    Equip: ', Equip',
+                    'First strike': ' with First Strike',
+                    Flash: ' with Flash',
+                    Flying: ' with Flying',
+                    Haste: ' with Haste',
+                    Hexproof: ', Hexproof',
+                    Indestructible: ', Indestructible', 
+                    Lifelink: ' with Lifelink',
+                    Menace: ' with Menace',
+                    Reach: ' with Reach',
+                    Trample: ' with Trample',
+                    Vigilance: ' with Vigilance',}
+  let itemAbility = '';
+  for (let a in abilities) {
+    let ability = abilities[a];
+    if (item.text.includes(a)) {
+      if (itemAbility == '') {itemAbility = ability} else {itemAbility += ability.replace('with','and')}
+      let regex = new RegExp('('+a.replace(' ','\\s')+')\\s(\\(.*\\)){0,}');
+      console.log(regex);
+      item.text = item.text.replace(regex,'');
+      if (item.text.startsWith(' (')) {item.text = item.text.replace(/\s\(*\)\s/,'')};
+      if (item.text.startsWith('(')) {item.text = item.text.replace(/\s\(*\)\s/,'')};
+      if (item.text.startsWith(', ')) {item.text = item.text.replace(', ','')};
+      if (item.text.startsWith(' and ')) {item.text = item.text.replace(' and ','')}
+      }
+    }
+  
+  return (
+    <li className="list-group-item" key={num} id={item.code}>
+    {item.imageUrl ? <img src={item.imageUrl} style={{float:'left', height: '148px', margin: '0px 10px'}}/> : null}
+    <strong>{item.name}</strong> <br/>{item.types.includes("Creature") ? item.power + '/' + item.toughness + ' ': null}{JSON.stringify(item.types).replace(/[\["|"\]]/g,'')}{itemAbility} <Mana manaCost={item.manaCost} key={num}></Mana><br/> 
+    <span style={{fontSize:'0.85rem'}}>{item.text.replace('[','\n[')}</span><br/><em style={{fontSize:'0.6rem'}}>{item.flavor}</em>
+    
+  </li>
+  )
+}
+
+function Mana({manaCost}) {
+  let manaArray = manaCost.replace(/^\{/,'').replace(/\}$/,'').split('}{');
+  return (
+    <div style={{display:'flex',width:'calc('+manaArray.length+' * 17)'}}>{manaArray.map((m,i)=>(<div key={i} className={/[WRGBU]/.test(m) ? 'mana mana-'+m : 'mana'}>{/[WRGBU]/.test(m) ? null : m}</div>))}</div>
+  )
 }
 
 // ========================================

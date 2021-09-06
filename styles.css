@@ -1,0 +1,61 @@
+.page-button {
+ background-color: white !important;
+ padding: 0px 12px !important;
+ margin-top: 15px !important;
+ margin-left: 5px !important;
+ margin-right: 5px !important;
+ border-radius: 5px !important;
+ border: 1px solid #ddd !important;
+ padding-right: -5px;
+ color: #666 !important;
+ font-size: 0.85rem !important;
+ z-index: 100;
+}
+
+.page-button-disabled {
+    background-color: white !important;
+    padding: 0px 0px !important;
+    margin-top: 15px !important;
+    margin-left: 0px !important;
+    margin-right: 5px !important;
+    border-radius: 5px !important;
+    border: none !important;
+    padding-right: -5px;
+    color: #666 !important;
+    font-size: 0.85rem !important;
+    z-index: 100;
+    opacity: 1 !important;
+   }
+
+.mana {
+   background-color: tan;
+   padding: -8px;
+   text-align: center;
+   font-size: 0.6rem;
+   font-weight: 600;
+   border-radius: 50%;
+   border: 1px solid darkgray;
+   width: 15px;
+   height: 15px;
+   margin: 0px 2px;
+   box-shadow: 1px 1px 1px #666;
+   display: inline;
+   position: relative;
+   flex-shrink: 0;
+}
+.mana-R {
+   background-color: red !important;
+}
+
+.mana-G {
+   background-color: darkgreen !important;
+}
+.mana-U {
+   background-color: black !important;
+}
+.mana-W {
+   background-color: white !important;
+}
+.mana-B {
+   background-color: blue !important;
+}
