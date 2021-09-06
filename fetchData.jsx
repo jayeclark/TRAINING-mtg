@@ -109,6 +109,7 @@ function App() {
   const { Fragment, useState, useEffect, useReducer } = React;
   const [mode, setMode] = useState('sets');
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentSetPage, setCurrentSetPage] = useState(1);
   const pageSize = 5;
   const [mtgsetName, setMtgsetName] = useState('');
   //const [cards, setCards] = useState([]);
@@ -125,24 +126,30 @@ function App() {
   const handleModeChange = (e) => {
     doFetch('https://api.magicthegathering.io/v1/cards?set='+e.target.id);
     setMode('cards');
-    setMtgsetName(e.target.innerHTML);
+    let name = sets.filter(set => set.code == e.target.id)[0].name;
+    setMtgsetName(name);
   }
 
   const handlePageBack = (e) => {
-    console.log(e.target.id);
     doFetch('https://api.magicthegathering.io/v1/sets');
     setMode('sets');
     setMtgsetName('');
   }
 
-  const handlePageChange = (e) => {
+  const handlePageChange = (e,mode) => {
     setCurrentPage(Number(e.target.textContent.replace('Pg ','')));
+    if (mode = 'sets') {
+      setCurrentSetPage(Number(e.target.textContent.replace('Pg ','')));
+    }
   };
+
   let filteredSets = sets.filter(set=> Number(set.releaseDate.substr(0,4)) >= 2018 && (set.type == 'core' || set.type == 'expansion'));
   let page = mode == 'sets' ? filteredSets : data.cards;
-  if (page.length >= 1) {
+  if (page.length >= 1 && mode == 'sets') {
+    page = paginate(page, currentSetPage, pageSize);
+  }
+  else if (page.length >= 1 && mode == 'cards') {
     page = paginate(page, currentPage, pageSize);
-    console.log(`currentPage: ${currentPage}`);
   }
 
 
@@ -167,7 +174,7 @@ function App() {
       <Pagination
         items={mode == 'sets' ? filteredSets : data.cards}
         pageSize={pageSize}
-        onPageChange={handlePageChange}
+        onPageChange={(e)=>{handlePageChange(e,mode)}}
         handlePageBack={handlePageBack}
         mode={mode}
       ></Pagination>
@@ -179,8 +186,8 @@ function SetDetails({item, num, handleModeChange}) {
   let months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   return (
     <li className="list-group-item" key={num} id={item.code} onClick={handleModeChange}>
-    <strong>{item.name}</strong><br/> 
-    <span style={{fontSize:'0.8rem'}}>({item.type.substr(0,1).toUpperCase()}{item.type.slice(1)}, {months[Number(item.releaseDate.substr(5,2))]} {item.releaseDate.substr(8,2)} {item.releaseDate.substr(0,4)})</span>
+    <strong id={item.code} >{item.name}</strong><br/> 
+    <span id={item.code} style={{fontSize:'0.8rem'}}>({item.type.substr(0,1).toUpperCase()}{item.type.slice(1)}, {months[Number(item.releaseDate.substr(5,2))]} {item.releaseDate.substr(8,2)} {item.releaseDate.substr(0,4)})</span>
   </li>
   )
 }
@@ -203,19 +210,15 @@ function CardDetails({item, num}) {
                     Trample: ' with Trample',
                     Vigilance: ' with Vigilance',}
   let itemAbility = '';
+  item.text = item.text.replace(" (This creature can't be blocked except by creatures with flying or reach.)",".");
+  item.text = item.text.replace(" (This creature deals combat damage before creatures without first strike.)",".");
   for (let a in abilities) {
     let ability = abilities[a];
     if (item.text.includes(a)) {
       if (itemAbility == '') {itemAbility = ability} else {itemAbility += ability.replace('with','and')}
-      let regex = new RegExp('('+a.replace(' ','\\s')+')\\s(\\(.*\\)){0,}');
-      console.log(regex);
-      item.text = item.text.replace(regex,'');
-      if (item.text.startsWith(' (')) {item.text = item.text.replace(/\s\(*\)\s/,'')};
-      if (item.text.startsWith('(')) {item.text = item.text.replace(/\s\(*\)\s/,'')};
-      if (item.text.startsWith(', ')) {item.text = item.text.replace(', ','')};
-      if (item.text.startsWith(' and ')) {item.text = item.text.replace(' and ','')}
+      item.text = item.text.replace(a+' ',a+'\. ');
       }
-    }
+  };
   
   return (
     <li className="list-group-item" key={num} id={item.code}>

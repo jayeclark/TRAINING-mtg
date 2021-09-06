@@ -50,12 +50,12 @@
 .mana-G {
    background-color: darkgreen !important;
 }
-.mana-U {
+.mana-B {
    background-color: black !important;
 }
 .mana-W {
    background-color: white !important;
 }
-.mana-B {
-   background-color: blue !important;
+.mana-U {
+   background-color: rgb(101, 200, 249) !important;
 }
