@@ -28,7 +28,7 @@
    }
 
 .mana {
-   background-color: tan;
+   background-color: wheat;
    padding: -8px;
    text-align: center;
    font-size: 0.6rem;
@@ -54,7 +54,7 @@
    background-color: black !important;
 }
 .mana-W {
-   background-color: white !important;
+   background-color: cornsilk !important;
 }
 .mana-U {
    background-color: rgb(101, 200, 249) !important;
